@@ -17,6 +17,7 @@ import type {
   recordInputSchema,
   tableInputSchema,
 } from "./schema";
+import { FIELD_TYPES } from "./schema";
 
 type TableInput = z.infer<typeof tableInputSchema>;
 type FieldInput = z.infer<typeof fieldInputSchema>;
@@ -203,25 +204,43 @@ export function updateField(fieldId: string, input: FieldUpdate): GlobalField {
     if (conflict) throw new ApiError(409, `Field "${name}" sudah ada pada tabel ini.`);
   }
 
-  db.prepare(
-    `UPDATE global_fields SET name = ?, label = ?, type = ?, options = ?, required = ?, position = ?
-     WHERE id = ?`,
-  ).run(
-    name,
-    input.label ?? String(existing.label),
-    input.type ?? String(existing.type),
-    input.options ? JSON.stringify(input.options) : String(existing.options),
-    input.required === undefined ? Number(existing.required) : input.required ? 1 : 0,
-    input.position ?? Number(existing.position),
-    fieldId,
-  );
-  db.prepare("UPDATE global_tables SET updated_at = ? WHERE id = ?").run(
-    nowIso(),
-    String(existing.table_id),
-  );
+  // Validate type against database constraints
+  const type = input.type ?? String(existing.type);
+  console.log(`[updateField] Updating field ${fieldId}, type: ${type}`);
+  
+  if (!FIELD_TYPES.includes(type as any)) {
+    console.error(`[updateField] Invalid type: ${type}, valid types: ${FIELD_TYPES.join(', ')}`);
+    throw new ApiError(422, `Tipe field tidak valid: ${type}`);
+  }
 
-  const row = db.prepare("SELECT * FROM global_fields WHERE id = ?").get(fieldId);
-  return mapField(row as Record<string, unknown>);
+  try {
+    db.prepare(
+      `UPDATE global_fields SET name = ?, label = ?, type = ?, options = ?, required = ?, position = ?
+       WHERE id = ?`,
+    ).run(
+      name,
+      input.label ?? String(existing.label),
+      type,
+      input.options ? JSON.stringify(input.options) : String(existing.options),
+      input.required === undefined ? Number(existing.required) : input.required ? 1 : 0,
+      input.position ?? Number(existing.position),
+      fieldId,
+    );
+    
+    db.prepare("UPDATE global_tables SET updated_at = ? WHERE id = ?").run(
+      nowIso(),
+      String(existing.table_id),
+    );
+
+    const row = db.prepare("SELECT * FROM global_fields WHERE id = ?").get(fieldId);
+    return mapField(row as Record<string, unknown>);
+  } catch (error) {
+    console.error(`[updateField] Database error:`, error);
+    if (error instanceof Error && error.message.includes('CHECK constraint failed')) {
+      throw new ApiError(422, `Tipe field tidak valid: ${type}. Gunakan salah satu dari: ${FIELD_TYPES.join(', ')}`);
+    }
+    throw error;
+  }
 }
 
 export function getFieldUsage(fieldName: string, tableId: string): number {
@@ -306,6 +325,11 @@ function coerceValue(
         throw new ApiError(422, `Nilai "${value}" tidak ada pada pilihan ${field.label}.`);
       }
       return value;
+    }
+    case "rich_text": {
+      // Sanitasi HTML sederhana: trim whitespace, tidak memotong teks
+      const value = String(raw).trim();
+      return value || null;
     }
     default:
       return String(raw).slice(0, 2000);

@@ -1,3 +1,18 @@
+export const FIELD_TYPE_SQL = "'text', 'number', 'date', 'select', 'boolean', 'email', 'rich_text'";
+
+export function globalFieldsTableSql(tableName = "global_fields"): string {
+  return `CREATE TABLE IF NOT EXISTS ${tableName} (
+  id TEXT PRIMARY KEY,
+  table_id TEXT NOT NULL REFERENCES global_tables(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  label TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN (${FIELD_TYPE_SQL})),
+  options TEXT NOT NULL DEFAULT '[]',
+  required INTEGER NOT NULL DEFAULT 0,
+  position INTEGER NOT NULL DEFAULT 0
+);`;
+}
+
 export const SCHEMA_SQL = `
 PRAGMA journal_mode = WAL;
 PRAGMA foreign_keys = ON;
@@ -29,16 +44,7 @@ CREATE TABLE IF NOT EXISTS global_tables (
   updated_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS global_fields (
-  id TEXT PRIMARY KEY,
-  table_id TEXT NOT NULL REFERENCES global_tables(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  label TEXT NOT NULL,
-  type TEXT NOT NULL CHECK (type IN ('text', 'number', 'date', 'select', 'boolean', 'email')),
-  options TEXT NOT NULL DEFAULT '[]',
-  required INTEGER NOT NULL DEFAULT 0,
-  position INTEGER NOT NULL DEFAULT 0
-);
+${globalFieldsTableSql()}
 CREATE INDEX IF NOT EXISTS idx_fields_table ON global_fields(table_id, position);
 
 CREATE TABLE IF NOT EXISTS global_records (

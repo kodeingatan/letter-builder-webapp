@@ -315,7 +315,6 @@ export function TemplateWorkspace({
       <RightDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        onOpen={() => setDrawerOpen(true)}
         title="Templates"
         subtitle={`${templates.length} template`}
         filters={

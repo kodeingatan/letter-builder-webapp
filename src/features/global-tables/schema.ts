@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const FIELD_TYPES = ["text", "number", "date", "select", "boolean", "email"] as const;
+export const FIELD_TYPES = ["text", "number", "date", "select", "boolean", "email", "rich_text"] as const;
 
 export const tableInputSchema = z.object({
   name: z.string().trim().min(2, "Nama tabel minimal 2 karakter.").max(60, "Nama tabel maksimal 60 karakter."),

@@ -781,7 +781,6 @@ export function SuratWizard({
       <RightDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        onOpen={() => setDrawerOpen(true)}
         title="Daftar surat"
         subtitle={administrasi.name}
         footer={

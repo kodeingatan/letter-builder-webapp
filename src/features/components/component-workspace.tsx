@@ -193,7 +193,6 @@ export function ComponentWorkspace({
       <RightDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        onOpen={() => setDrawerOpen(true)}
         title="Components"
         subtitle={`${components.length} component`}
         filters={<SearchInput value={query} onChange={setQuery} placeholder="Cari component…" />}

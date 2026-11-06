@@ -685,7 +685,6 @@ export function AdministrasiWorkspace({
       <RightDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        onOpen={() => setDrawerOpen(true)}
         title="Administrasi"
         subtitle={`${list.length} paket alur`}
         filters={<SearchInput value={drawerQuery} onChange={setDrawerQuery} placeholder="Cari administrasi…" />}

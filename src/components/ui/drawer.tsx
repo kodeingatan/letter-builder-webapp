@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import { PanelRightClose, PanelRightOpen } from "lucide-react";
+import { PanelRightClose } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface RightDrawerProps {
   open: boolean;
   onClose: () => void;
-  onOpen?: () => void;
   title: string;
   subtitle?: ReactNode;
   actions?: ReactNode;
@@ -24,7 +23,6 @@ interface RightDrawerProps {
 export function RightDrawer({
   open,
   onClose,
-  onOpen,
   title,
   subtitle,
   actions,
@@ -42,19 +40,7 @@ export function RightDrawer({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
-  if (!open) {
-    return onOpen ? (
-      <button
-        type="button"
-        onClick={onOpen}
-        title={`Buka panel ${title.toLowerCase()}`}
-        className="fixed right-3 top-16 z-20 hidden items-center gap-1.5 rounded-[6px] border border-line bg-canvas px-2.5 py-1.5 text-[12px] font-medium text-muted shadow-[var(--shadow-card)] transition-colors hover:bg-warm hover:text-ink xl:flex"
-      >
-        <PanelRightOpen className="h-3.5 w-3.5" />
-        {title}
-      </button>
-    ) : null;
-  }
+  if (!open) return null;
 
   return (
     <aside

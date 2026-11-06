@@ -16,13 +16,15 @@ import type { GlobalField, GlobalFieldType, GlobalRecord, GlobalTable } from "@/
 import { formatRelative } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
-import { Checkbox, Field, Input, Select, TextField, TextareaField } from "@/components/ui/input";
+import { ConfirmDialog, Dialog } from "@/components/ui/dialog";import { Checkbox, Field, Input, Select, TextField, TextareaField } from "@/components/ui/input";
+
 import { DropdownMenu } from "@/components/ui/menu";
 import { DrawerEmpty, DrawerItem, RightDrawer } from "@/components/ui/drawer";
 import { EmptyState, PageHeader, SearchInput, Tabs } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
 import { NewTableButton } from "./new-table-button";
+import { RichTextEditor } from "@/components/editor/rich-text-editor";
+import DOMPurify from "isomorphic-dompurify";
 
 type Tab = "structure" | "data";
 
@@ -33,6 +35,7 @@ const FIELD_TYPES: Array<{ value: GlobalFieldType; label: string }> = [
   { value: "select", label: "Pilihan" },
   { value: "boolean", label: "Ya / Tidak" },
   { value: "email", label: "Surel" },
+  { value: "rich_text", label: "Rich text" },
 ];
 
 export function TableWorkspace({
@@ -410,7 +413,6 @@ export function TableWorkspace({
       <RightDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        onOpen={() => setDrawerOpen(true)}
         title="Global Tables"
         subtitle={`${tables.length} tabel`}
         filters={<SearchInput value={drawerQuery} onChange={setDrawerQuery} placeholder="Cari tabel…" />}
@@ -563,8 +565,68 @@ function RecordCell({
   onSave: (value: string | number | boolean | null) => void;
 }) {
   const [local, setLocal] = useState(value);
+  const [richTextOpen, setRichTextOpen] = useState(false);
+  const [richTextDraft, setRichTextDraft] = useState(String(value ?? ""));
   const baseClass =
     "w-full rounded-[3px] border border-transparent bg-transparent px-1.5 py-1 text-[12px] hover:border-line focus:border-brand focus:bg-canvas focus:outline-none";
+
+  if (field.type === "rich_text") {
+    const html = String(value ?? "");
+    const preview = html ? (
+      <div
+        className="max-h-40 overflow-y-auto px-1.5 py-1 text-[12px] text-muted [&_ol]:list-decimal [&_ol]:pl-4 [&_ul]:list-disc [&_ul]:pl-4"
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html) }}
+      />
+    ) : (
+      <span className="block px-1.5 py-1 text-[12px] text-faint">—</span>
+    );
+
+    if (readOnly) return preview;
+
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => {
+            setRichTextDraft(html);
+            setRichTextOpen(true);
+          }}
+          className="block w-full rounded-[3px] border border-transparent text-left hover:border-line focus:border-brand focus:outline-none"
+          aria-label={`Edit ${field.label}`}
+        >
+          {preview}
+        </button>
+        <Dialog
+          open={richTextOpen}
+          onClose={() => setRichTextOpen(false)}
+          title={`Edit ${field.label}`}
+          size="md"
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setRichTextOpen(false)}>
+                Batal
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  if (richTextDraft !== String(value ?? "")) onSave(richTextDraft);
+                  setRichTextOpen(false);
+                }}
+              >
+                Simpan
+              </Button>
+            </>
+          }
+        >
+          <RichTextEditor
+            value={richTextDraft}
+            onChange={setRichTextDraft}
+            ariaLabel={field.label}
+          />
+        </Dialog>
+      </>
+    );
+  }
 
   if (readOnly) {
     return (
@@ -867,7 +929,7 @@ function AddRecordDialog({
     >
       <div className="grid max-h-[52vh] gap-2.5 overflow-y-auto pr-1 sm:grid-cols-2">
         {fields.map((field) => (
-          <div key={field.id}>
+          <div key={field.id} className={field.type === "rich_text" ? "sm:col-span-2" : undefined}>
             <label className="text-[12px] font-medium text-muted">
               {field.label}
               {field.required ? <span className="ml-0.5 text-danger">*</span> : null}
@@ -900,6 +962,15 @@ function AddRecordDialog({
                 />
                 Ya
               </label>
+            ) : field.type === "rich_text" ? (
+              <RichTextEditor
+                value={values[field.name] ?? ""}
+                onChange={(html) =>
+                  setValues((current) => ({ ...current, [field.name]: html }))
+                }
+                ariaLabel={field.label}
+                className="mt-1.5"
+              />
             ) : (
               <Input
                 type={field.type === "date" ? "date" : field.type === "number" ? "number" : field.type === "email" ? "email" : "text"}

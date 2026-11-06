@@ -14,7 +14,7 @@ export interface GlobalTable {
   recordCount?: number;
 }
 
-export type GlobalFieldType = "text" | "number" | "date" | "select" | "boolean" | "email";
+export type GlobalFieldType = "text" | "number" | "date" | "select" | "boolean" | "email" | "rich_text";
 
 export interface GlobalField {
   id: string;
